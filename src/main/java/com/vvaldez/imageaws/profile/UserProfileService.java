@@ -49,9 +49,23 @@ public class UserProfileService {
         String filename = String.format("%s-%s", file.getOriginalFilename(), UUID.randomUUID());
         try {
             fileStore.save(BucketName.PROFILE_IMAGE.getBucketName(), path, filename, Optional.of(metadata), file.getInputStream());
+            user.setUserProfileLink(filename);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+
+    }
+
+    public byte[] downloadUserProfileImage(UUID userProfileId) {
+        Optional<UserProfile> userOptional = userProfileDataAccessService.getUserById(userProfileId);
+        if(userOptional.isEmpty()) throw new IllegalStateException("Usuario no existente");
+        UserProfile user = userOptional.get();
+
+        String path = String.format("%s",
+                BucketName.PROFILE_IMAGE.getBucketName());
+        String prefix = String.format("%s", user.getUserProfileId());
+        return user.getUserProfileLink().map(key -> fileStore.download(path, prefix,key))
+                .orElse(new byte[0]);
 
     }
 }
