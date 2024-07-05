@@ -1,44 +1,27 @@
 package com.vvaldez.imageaws.profile;
 
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.io.Serializable;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
-public class UserProfile {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+public class UserProfile implements Serializable {
+    @Id
+    @GeneratedValue
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private UUID userProfileId;
     private String username;
     private String userProfileLink; // S3 key
-
-    public UserProfile(UUID userProfileId, String username, String userProfileLink) {
-        this.userProfileId = userProfileId;
-        this.username = username;
-        this.userProfileLink = userProfileLink;
-    }
-
-    public UUID getUserProfileId() {
-        return userProfileId;
-    }
-
-    public void setUserProfileId(UUID userProfileId) {
-        this.userProfileId = userProfileId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public Optional<String>  getUserProfileLink() {
-        return Optional.ofNullable(userProfileLink);
-    }
-
-    public void setUserProfileLink(String userProfileLink) {
-        this.userProfileLink = userProfileLink;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

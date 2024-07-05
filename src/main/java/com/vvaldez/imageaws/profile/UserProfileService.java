@@ -1,7 +1,9 @@
 package com.vvaldez.imageaws.profile;
 
+import com.amazonaws.services.s3.AmazonS3;
 import com.vvaldez.imageaws.bucket.BucketName;
 import com.vvaldez.imageaws.filestore.FileStore;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,15 +12,12 @@ import java.util.*;
 
 import static org.apache.http.entity.ContentType.*;
 
+@RequiredArgsConstructor
 @Service
 public class UserProfileService {
     private final UserProfileDataAccessService userProfileDataAccessService;
     private final FileStore fileStore;
-
-    public UserProfileService(UserProfileDataAccessService userProfileDataAccessService, FileStore fileStore) {
-        this.userProfileDataAccessService = userProfileDataAccessService;
-        this.fileStore = fileStore;
-    }
+    private final AmazonS3 s3;
 
     List<UserProfile> getUserProfile(){
         return userProfileDataAccessService.getUserProfile();
@@ -38,18 +37,23 @@ public class UserProfileService {
         // 3. Si el usuario existe en nuestra base de datos
         Optional<UserProfile> userOptional = userProfileDataAccessService.getUserById(userProfileId);
         if(userOptional.isEmpty()) throw new IllegalStateException("Usuario no existente");
+
+
         // 4. Guardar alguna metadata del archivo si existe
         Map<String, String> metadata = new HashMap<>();
         metadata.put("Content-Type", file.getContentType());
         metadata.put("Content-Length", String.valueOf(file.getSize()));
 
         // 5. Guardar la imagen en s3 y hacer un update de la base de datos con la url del s3
+
         UserProfile user = userOptional.get();
-        String path = (user.getUserProfileId().toString());
-        String filename = String.format("%s-%s", file.getOriginalFilename(), UUID.randomUUID());
+        String path = user.getUserProfileId().toString();
+        String filename = String.format("%s-%s", UUID.randomUUID(), file.getOriginalFilename());
         try {
             fileStore.save(BucketName.PROFILE_IMAGE.getBucketName(), path, filename, Optional.of(metadata), file.getInputStream());
-            user.setUserProfileLink(filename);
+            String fileUrl = s3.getUrl(BucketName.PROFILE_IMAGE.getBucketName(), String.format("%s/%s", path, filename)).toString();
+            user.setUserProfileLink(fileUrl);
+            userProfileDataAccessService.updateUserProfile(user);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
@@ -61,11 +65,13 @@ public class UserProfileService {
         if(userOptional.isEmpty()) throw new IllegalStateException("Usuario no existente");
         UserProfile user = userOptional.get();
 
-        String path = String.format("%s",
-                BucketName.PROFILE_IMAGE.getBucketName());
-        String prefix = String.format("%s", user.getUserProfileId());
-        return user.getUserProfileLink().map(key -> fileStore.download(path, prefix,key))
-                .orElse(new byte[0]);
-
+        if(user.getUserProfileLink()!=null){
+            String path = BucketName.PROFILE_IMAGE.getBucketName();
+            String prefix = user.getUserProfileId().toString();
+            String key = user.getUserProfileLink();
+            return fileStore.download(path, prefix, key);
+        } else {
+            return new byte[0];
+        }
     }
 }

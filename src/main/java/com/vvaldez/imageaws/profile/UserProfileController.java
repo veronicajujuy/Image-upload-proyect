@@ -1,5 +1,6 @@
 package com.vvaldez.imageaws.profile;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -7,14 +8,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("api/v1/user-profile")
 public class UserProfileController {
     private final UserProfileService userProfileService;
-
-    public UserProfileController(UserProfileService userProfileService) {
-        this.userProfileService = userProfileService;
-    }
 
     @GetMapping
     public List<UserProfile> getUserProfiles(){

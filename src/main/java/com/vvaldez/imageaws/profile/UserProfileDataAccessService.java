@@ -1,24 +1,25 @@
 package com.vvaldez.imageaws.profile;
 
-import com.vvaldez.imageaws.datastore.FakeUserProfileDataStore;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@RequiredArgsConstructor
 @Repository
 public class UserProfileDataAccessService {
-    private final FakeUserProfileDataStore fakeUserProfileDataStore;
-
-    public UserProfileDataAccessService(FakeUserProfileDataStore fakeUserProfileDataStore) {
-        this.fakeUserProfileDataStore = fakeUserProfileDataStore;
-    }
+    private final UserRepository userRepository;
 
     List<UserProfile> getUserProfile(){
-        return fakeUserProfileDataStore.getUserProfiles();
+        return userRepository.findAll();
     }
     public Optional<UserProfile> getUserById(UUID id){
-        return fakeUserProfileDataStore.getUserById(id);
+        return userRepository.findById(id);
+    }
+
+    public void updateUserProfile(UserProfile userProfile) {
+        userRepository.save(userProfile);
     }
 }
