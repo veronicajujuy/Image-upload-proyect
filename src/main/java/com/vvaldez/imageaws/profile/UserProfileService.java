@@ -37,22 +37,18 @@ public class UserProfileService {
         // 3. Si el usuario existe en nuestra base de datos
         Optional<UserProfile> userOptional = userProfileDataAccessService.getUserById(userProfileId);
         if(userOptional.isEmpty()) throw new IllegalStateException("Usuario no existente");
-
-
         // 4. Guardar alguna metadata del archivo si existe
         Map<String, String> metadata = new HashMap<>();
         metadata.put("Content-Type", file.getContentType());
         metadata.put("Content-Length", String.valueOf(file.getSize()));
 
         // 5. Guardar la imagen en s3 y hacer un update de la base de datos con la url del s3
-
         UserProfile user = userOptional.get();
-        String path = user.getUserProfileId().toString();
-        String filename = String.format("%s-%s", UUID.randomUUID(), file.getOriginalFilename());
+        String path = (user.getUserProfileId().toString());
+        String filename = String.format("%s-%s", file.getOriginalFilename(), UUID.randomUUID());
         try {
             fileStore.save(BucketName.PROFILE_IMAGE.getBucketName(), path, filename, Optional.of(metadata), file.getInputStream());
-            String fileUrl = s3.getUrl(BucketName.PROFILE_IMAGE.getBucketName(), String.format("%s/%s", path, filename)).toString();
-            user.setUserProfileLink(fileUrl);
+            user.setUserProfileLink(filename);
             userProfileDataAccessService.updateUserProfile(user);
         } catch (IOException e) {
             throw new IllegalStateException(e);
@@ -66,8 +62,9 @@ public class UserProfileService {
         UserProfile user = userOptional.get();
 
         if(user.getUserProfileLink()!=null){
-            String path = BucketName.PROFILE_IMAGE.getBucketName();
-            String prefix = user.getUserProfileId().toString();
+            String path = String.format("%s",
+                    BucketName.PROFILE_IMAGE.getBucketName());
+            String prefix = String.format("%s", user.getUserProfileId());
             String key = user.getUserProfileLink();
             return fileStore.download(path, prefix, key);
         } else {
